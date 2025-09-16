@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Mapa com GIF Pulsando</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css"/>
+    <script src="https://js.arcgis.com/4.30/"></script>
+    <style>
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="viewDiv"></div>
+<script>
+  require([
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/layers/FeatureLayer"
+  ], function (Map, MapView, FeatureLayer) {
+
+    const map = new Map({
+      basemap: "streets-night-vector"
+    });
+
+    const view = new MapView({
+      container: "viewDiv",
+      map: map,
+      center: [-50.67, -22.65], // ajuste p/ região da sua operação
+      zoom: 13
+    });
+
+    // Renderer usando ALERTA_ATIVO
+    const renderer = {
+      type: "unique-value",
+      field: "ALERTA_ATIVO",
+      uniqueValueInfos: [
+        {
+          value: "Colhedoras1",
+          symbol: {
+            type: "picture-marker",
+            url: "https://arcgis.agroterenas.com.br/portal/sharing/rest/content/items/2a1beb1115ba420ab6c82dd538d66fe2/data",
+            width: "42px",
+            height: "42px"
+          }
+        },
+        {
+          value: "Colhedoras0",
+          symbol: {
+            type: "picture-marker",
+            url: "https://arcgis.agroterenas.com.br/portal/sharing/rest/content/items/9a3ad31692034db48cfc5861f8c3a952/data",
+            width: "42px",
+            height: "42px"
+          }
+        }
+      ],
+      defaultSymbol: {
+        type: "simple-marker",
+        color: "gray",
+        size: 10
+      }
+    };
+
+    const layer = new FeatureLayer({
+      url: "https://arcgis.agroterenas.com.br/server/rest/services/Hosted/LAST_DATA_EQUIPMENTS/FeatureServer/0",
+      renderer: renderer,
+      outFields: ["*"]
+    });
+
+    map.add(layer);
+  });
+</script>
+</body>
+</html>
