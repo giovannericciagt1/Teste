@@ -1,78 +1,107 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8"/>
-    <title>Mapa com GIF Pulsando</title>
-    <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css"/>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pontos Pulsando</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css" />
     <script src="https://js.arcgis.com/4.30/"></script>
     <style>
-        html, body, #viewDiv {
-            padding: 0;
-            margin: 0;
-            height: 100%;
-            width: 100%;
-        }
-    </style>
-</head>
-<body>
-<div id="viewDiv"></div>
-<script>
-  require([
-    "esri/Map",
-    "esri/views/MapView",
-    "esri/layers/FeatureLayer"
-  ], function (Map, MapView, FeatureLayer) {
-
-    const map = new Map({
-      basemap: "streets-night-vector"
-    });
-
-    const view = new MapView({
-      container: "viewDiv",
-      map: map,
-      center: [-50.67, -22.65], // ajuste p/ região da sua operação
-      zoom: 13
-    });
-
-    // Renderer usando ALERTA_ATIVO
-    const renderer = {
-      type: "unique-value",
-      field: "ALERTA_ATIVO",
-      uniqueValueInfos: [
-        {
-          value: "Colhedoras1",
-          symbol: {
-            type: "picture-marker",
-            url: "https://arcgis.agroterenas.com.br/portal/sharing/rest/content/items/2a1beb1115ba420ab6c82dd538d66fe2/data",
-            width: "42px",
-            height: "42px"
-          }
-        },
-        {
-          value: "Colhedoras0",
-          symbol: {
-            type: "picture-marker",
-            url: "https://arcgis.agroterenas.com.br/portal/sharing/rest/content/items/9a3ad31692034db48cfc5861f8c3a952/data",
-            width: "42px",
-            height: "42px"
-          }
-        }
-      ],
-      defaultSymbol: {
-        type: "simple-marker",
-        color: "gray",
-        size: 10
+      html, body, #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
       }
-    };
+    </style>
+  </head>
+  <body>
+    <div id="viewDiv"></div>
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/FeatureLayer",
+        "esri/layers/GraphicsLayer",
+        "esri/Graphic"
+      ], function(Map, MapView, FeatureLayer, GraphicsLayer, Graphic) {
 
-    const layer = new FeatureLayer({
-      url: "https://arcgis.agroterenas.com.br/server/rest/services/Hosted/LAST_DATA_EQUIPMENTS/FeatureServer/0",
-      renderer: renderer,
-      outFields: ["*"]
-    });
+        const map = new Map({
+          basemap: "streets-night-vector"
+        });
 
-    map.add(layer);
-  });
-</script>
-</body>
+        const view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [-50.67, -22.65], // ajuste p/ sua área
+          zoom: 13
+        });
+
+        // camada original
+        const featureLayer = new FeatureLayer({
+          url: "https://arcgis.agroterenas.com.br/server/rest/services/Hosted/LAST_DATA_EQUIPMENTS/FeatureServer/0",
+          outFields: ["*"]
+        });
+        map.add(featureLayer);
+
+        // camada gráfica para os pontos pulsando
+        const pulseLayer = new GraphicsLayer();
+        map.add(pulseLayer);
+
+        // função que desenha o "pulsar"
+        function drawPulse(features) {
+          let grow = true;
+          let size = 10;
+
+          setInterval(() => {
+            pulseLayer.removeAll();
+
+            features.forEach(f => {
+              const alerta = f.attributes["ALERTA_ATIVO"];
+              let color = "gray";
+
+              if (alerta && alerta.endsWith("1")) {
+                color = "red";
+              } else if (alerta && alerta.endsWith("0")) {
+                color = "green";
+              }
+
+              const pointGraphic = new Graphic({
+                geometry: f.geometry,
+                symbol: {
+                  type: "simple-marker",
+                  color: color,
+                  size: size,
+                  outline: {
+                    color: "white",
+                    width: 1
+                  }
+                }
+              });
+
+              pulseLayer.add(pointGraphic);
+            });
+
+            // anima o tamanho
+            if (grow) {
+              size += 2;
+              if (size >= 30) grow = false;
+            } else {
+              size -= 2;
+              if (size <= 10) grow = true;
+            }
+          }, 300); // intervalo em ms
+        }
+
+        // pegar os dados da camada
+        featureLayer.queryFeatures({
+          where: "1=1",
+          outFields: ["*"],
+          returnGeometry: true
+        }).then(result => {
+          drawPulse(result.features);
+        });
+
+      });
+    </script>
+  </body>
 </html>
