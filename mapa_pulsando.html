@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Pontos Pulsando</title>
+    <title>Pontos Pulsando com Troca de Mapa Base</title>
     <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css" />
     <script src="https://js.arcgis.com/4.30/"></script>
     <style>
@@ -11,6 +11,9 @@
         margin: 0;
         height: 100%;
         width: 100%;
+      }
+      .esri-basemap-gallery {
+        background-color: white;
       }
     </style>
   </head>
@@ -22,32 +25,33 @@
         "esri/views/MapView",
         "esri/layers/FeatureLayer",
         "esri/layers/GraphicsLayer",
-        "esri/Graphic"
-      ], function(Map, MapView, FeatureLayer, GraphicsLayer, Graphic) {
+        "esri/Graphic",
+        "esri/widgets/BasemapGallery",
+        "esri/widgets/Expand"
+      ], function(Map, MapView, FeatureLayer, GraphicsLayer, Graphic, BasemapGallery, Expand) {
 
         const map = new Map({
-          basemap: "hybrid"
+          basemap: "hybrid"  // inicial
         });
 
         const view = new MapView({
           container: "viewDiv",
           map: map,
-          center: [-50.67, -22.65], // ajuste p/ sua área
-          zoom: 13
+          center: [-50.67, -22.65],
+          zoom: 10
         });
 
-        // camada original
+        // Camada de equipamentos
         const featureLayer = new FeatureLayer({
           url: "https://arcgis.agroterenas.com.br/server/rest/services/Hosted/LAST_DATA_EQUIPMENTS/FeatureServer/0",
           outFields: ["*"]
         });
         map.add(featureLayer);
 
-        // camada gráfica para os pontos pulsando
+        // Camada de pontos pulsando
         const pulseLayer = new GraphicsLayer();
         map.add(pulseLayer);
 
-        // função que desenha o "pulsar"
         function drawPulse(features) {
           let grow = true;
           let size = 10;
@@ -81,7 +85,6 @@
               pulseLayer.add(pointGraphic);
             });
 
-            // anima o tamanho
             if (grow) {
               size += 2;
               if (size >= 30) grow = false;
@@ -89,10 +92,9 @@
               size -= 2;
               if (size <= 10) grow = true;
             }
-          }, 300); // intervalo em ms
+          }, 300);
         }
 
-        // pegar os dados da camada
         featureLayer.queryFeatures({
           where: "1=1",
           outFields: ["*"],
@@ -101,9 +103,21 @@
           drawPulse(result.features);
         });
 
+        // 🔹 BasemapGallery (troca de mapas base)
+        const basemapGallery = new BasemapGallery({
+          view: view
+        });
+
+        // Colocar dentro de um Expand (menu flutuante)
+        const bgExpand = new Expand({
+          view: view,
+          content: basemapGallery,
+          expandIconClass: "esri-icon-basemap"
+        });
+
+        view.ui.add(bgExpand, "top-right");
+
       });
     </script>
   </body>
 </html>
-
-
